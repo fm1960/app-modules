@@ -7,7 +7,7 @@
 
 ## What this repo is
 
-`fm1960/app-modules` is a **module library** — not a running app.
+This is a **module library** — not a running app.
 It contains reusable building blocks that Claude assembles into new apps on request.
 
 The workflow:
@@ -25,7 +25,7 @@ The workflow:
 - **Tailwind CSS** — styling
 - **react-leaflet** — maps (only when gps-places module is included)
 - **Vercel** — deployment
-- **GitHub** — `fm1960` account
+- **GitHub** — version control
 
 ---
 
@@ -135,7 +135,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 | Module         | Status   | Tables added to Supabase     |
 |----------------|----------|------------------------------|
 | app-base       | ✓ Built  | none (shell only)            |
-| auth           | Planned  | uses Supabase Auth built-in  |
+| auth           | ✓ Built  | profiles table               |
 | user-manager   | Planned  | profiles, roles              |
 | articles       | Planned  | articles, categories         |
 | comments       | Planned  | comments                     |
@@ -144,18 +144,58 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
 ---
 
-## Git identity
+## Git workflow
 
-Always commit as `fm1960`. Before first commit on any machine:
+### First push on a new machine (run once per repo)
+
 ```bash
-git config user.name "fm1960"
-git config user.email "your-email@example.com"
+git init
+git config user.name "your-github-username"
+git config user.email "your-github-email@example.com"
+git add .
+git commit -m "initial commit"
+git branch -M main
+git remote add origin https://github.com/YOUR-USERNAME/YOUR-REPO-NAME.git
+git push -u origin main
 ```
 
-## Deploy
+> Replace `YOUR-USERNAME` and `YOUR-REPO-NAME` with your actual GitHub values.
+> Your GitHub username and email are not stored in this file.
 
-Each app is a separate Vercel project pointing to its own GitHub repo.
-The `app-modules` repo itself is never deployed — library only.
+### Every update after that
+
+```bash
+git add .
+git commit -m "describe what changed"
+git push
+```
+
+### Standard app build + push (never push broken code)
+
+```bash
+npm run build && git add . && git commit -m "your message" && git push
+```
+
+> The `&&` means: if `build` fails, everything after it stops.
+> This prevents pushing code that does not compile.
+
+---
+
+## Security rules (never break these)
+
+- `.env.local` is always in `.gitignore` — **never commit it**
+- Never hardcode API keys, passwords, or URLs in source files
+- All secrets go in `.env.local` (local) or Vercel project settings (production)
+- The `.env.local.example` file shows variable names only — never the values
+
+---
+
+## Deploy checklist (Vercel)
+
+1. Push code to GitHub
+2. Go to vercel.com → Add New Project → Import your GitHub repo
+3. Add environment variables in Vercel project settings (same names as `.env.local`)
+4. Deploy — Vercel auto-deploys on every future `git push`
 
 ---
 
