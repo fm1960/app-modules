@@ -1,7 +1,3 @@
-// Route: /auth/callback
-// Supabase calls this URL after Google OAuth login
-// Configure this URL in: Supabase Dashboard → Auth → URL Configuration → Redirect URLs
-
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
@@ -19,9 +15,9 @@ export async function GET(request: NextRequest) {
       {
         cookies: {
           getAll() { return cookieStore.getAll() },
-          setAll(cookiesToSet) {
+          setAll(cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[]) {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, options as Parameters<typeof cookieStore.set>[2])
             )
           },
         },
@@ -34,6 +30,5 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Something went wrong — redirect to login with error
   return NextResponse.redirect(`${origin}/auth/login?error=oauth_failed`)
 }

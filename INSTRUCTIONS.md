@@ -200,3 +200,91 @@ npm run build && git add . && git commit -m "your message" && git push
 ---
 
 *Last updated: session building app-base*
+
+---
+
+## Google OAuth — Full Setup Guide
+
+This is required for "Continuer avec Google" to work in module-auth.
+Do this once per Supabase project — all apps sharing the same project reuse it.
+
+### Step 1 — Google Cloud Console
+1. Go to [console.cloud.google.com](https://console.cloud.google.com)
+2. Create a project (or use an existing one)
+3. Go to **APIs & Services → Credentials → Create Credentials → OAuth Client ID**
+4. Application type: **Web application**
+5. Under **Authorized redirect URIs**, add:
+   ```
+   https://YOUR-SUPABASE-PROJECT-ID.supabase.co/auth/v1/callback
+   http://localhost:3000/auth/callback
+   ```
+   > The Supabase URL is the critical one — Google redirects there first,
+   > then Supabase redirects to your app. Without this exact URL, you get
+   > `redirect_uri_mismatch` error.
+6. Save → copy the **Client ID** and **Client Secret**
+
+### Step 2 — Supabase Dashboard
+1. Go to **Authentication → Providers → Google**
+2. Toggle **Enable** ON
+3. Paste **Client ID** and **Client Secret**
+4. Save
+
+### Step 3 — Supabase Redirect URLs
+Go to **Authentication → URL Configuration → Redirect URLs** and add:
+```
+http://localhost:3000/auth/callback
+https://your-app.vercel.app/auth/callback
+```
+
+### Common errors and fixes
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `Unsupported provider: provider is not enabled` | Google not enabled in Supabase | Step 2 above |
+| `redirect_uri_mismatch` | Supabase URL not in Google Console | Step 1 — add `*.supabase.co/auth/v1/callback` |
+| `your-project-id.supabase.co` in URL | `.env.local` has placeholder value | Replace with real project ID |
+
+
+---
+
+## CRITICAL: Always run build before pushing
+
+**Never push code without running `npm run build` first.**
+Vercel uses strict TypeScript — errors that are invisible in `npm run dev`
+will break the Vercel deployment.
+
+### The only safe push workflow
+```bash
+npm run build && git add . && git commit -m "your message" && git push
+```
+If `npm run build` fails → fix errors first → then push.
+If it passes → safe to push.
+
+---
+
+## Known TypeScript strict errors and fixes
+
+### Error: `Parameter 'cookiesToSet' implicitly has an 'any' type`
+**File:** `middleware.ts` and `src/lib/supabase/server.ts`
+**Cause:** Supabase SSR `setAll` callback needs explicit typing in strict mode.
+**Fix:** Add explicit type to the parameter:
+```typescript
+// WRONG — works in dev, fails on Vercel
+setAll(cookiesToSet) {
+
+// CORRECT — add explicit type
+setAll(cookiesToSet: { name: string; value: string; options: Record<string, unknown> }[]) {
+```
+This fix is already applied in `app-base/middleware.ts` as of this session.
+
+### Error: `Type 'X' is not assignable to type 'Y'` on Supabase joins
+**Fix:** Use double casting:
+```typescript
+const data = result as unknown as YourExpectedType
+```
+
+### Error: `params`/`searchParams` type mismatch in Next.js 15
+**Fix:** Always await them:
+```typescript
+const { id } = await params   // NOT: const { id } = params
+```
